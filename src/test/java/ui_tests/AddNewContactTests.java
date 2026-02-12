@@ -1,47 +1,119 @@
 package ui_tests;
 
+import data_providers.ContactDataProvider;
+import data_providers.ContactNegativeDataProvider;
+import dto.Contact;
 import manager.AppManager;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import org.testng.asserts.SoftAssert;
 import pages.*;
 import utils.HeaderMenuItem;
-import dto.Contact;
-
 
 import static pages.BasePage.clickButtonHeader;
 import static utils.ContactFactory.*;
 
 public class AddNewContactTests extends AppManager {
-
+    SoftAssert softAssert = new SoftAssert();
     HomePage homePage;
     LoginPage loginPage;
     ContactPage contactPage;
     AddPage addPage;
+    int countOfContacts;
 
     @BeforeMethod
     public void login() {
         homePage = new HomePage(getDriver());
-        loginPage = clickButtonHeader(HeaderMenuItem.LOGIN);
-        loginPage.typeLoginRegistrationForm("sveta548@smd.com", "Password123!");
+        loginPage = homePage.clickButtonHeader(HeaderMenuItem.LOGIN);
+        loginPage.typeLoginRegistrationForm
+                ("sveta548@smd.com", "Password123!");
         loginPage.clickBtnLoginForm();
         contactPage = new ContactPage(getDriver());
+        countOfContacts = contactPage.getCountOfContacts();
         addPage = clickButtonHeader(HeaderMenuItem.ADD);
-        contactPage = clickButtonHeader(HeaderMenuItem.CONTACTS);
-
     }
 
     @Test
     public void addNewContactPositiveTest() {
+        addPage.typeContactForm(positiveContact());
+        int countOfContactsAfterAdd = contactPage.getCountOfContacts();
+        Assert.assertEquals(countOfContactsAfterAdd, countOfContacts + 1);
+    }
 
+    @Test(dataProvider = "dataProviderFromFile", dataProviderClass = ContactDataProvider.class)
+    public void addNewContactPositiveTest_WithDataProvider(Contact contact) {
+        addPage.typeContactForm(contact);
+        int countOfContactsAfterAdd = contactPage.getCountOfContacts();
+        Assert.assertEquals(countOfContactsAfterAdd, countOfContacts + 1);
+    }
+
+    @Test
+    public void addNewContactPositiveTest_ClickLastContact() {
         Contact contact = positiveContact();
+        addPage.typeContactForm(contact);
+        // contactPage.clickLastContact();
+        Assert.assertTrue(contactPage.isContactPresent(contact));
+    }
+
+    @Test
+    public void addNewContactPositiveTest_ScrollToLastContact() {
+        Contact contact = positiveContact();
+        addPage.typeContactForm(contact);
+        contactPage.scrollToLastContact();
+        contactPage.clickLastContact();
+        String text = contactPage.getTextInContact();
+        System.out.println(text);
+        softAssert.assertTrue(text.contains(contact.getName()),
+                "validate Name in DetailCard");
+        softAssert.assertTrue(text.contains(contact.getEmail()),
+                "validate Email in DetailCard");
+        softAssert.assertTrue(text.contains(contact.getPhone()),
+                "validate Phone in DetailCard");
+        softAssert.assertAll();
+    }
+
+    @Test(dataProvider = "dataProviderFromNegativeFile",
+            dataProviderClass = ContactNegativeDataProvider.class)
+    public void addNewContactNegativeTest(Contact contact) {
+        addPage.typeContactForm(contact);
+        int countAfter = contactPage.getCountOfContacts();
+        Assert.assertEquals(
+                countAfter,
+                countOfContacts,
+                "Contact should NOT be added with invalid data"
+        );
+    }
+
+    @Test(dataProvider = "dataProviderFromNegativeFile",
+            dataProviderClass = ContactNegativeDataProvider.class)
+    public void addNewContactNegativeTest_LastContactNotMatches(Contact contact) {
 
         addPage.typeContactForm(contact);
-        contactPage = clickButtonHeader(HeaderMenuItem.CONTACTS);
-        contactPage.waitForContact(contact.getName());
-        Assert.assertTrue(
-                contactPage.isContactAdded(contact.getName()),
-                "Contact was not found in the contact list after saving"
+
+
+        String lastContactText = contactPage.getLastContactText();
+
+
+        Assert.assertFalse(
+                lastContactText.contains(contact.getName()) ||
+                        lastContactText.contains(contact.getEmail()) ||
+                        lastContactText.contains(contact.getPhone()),
+                "Invalid contact SHOULD NOT appear in the list"
+        );
+    }
+
+    @Test(dataProvider = "dataProviderFromNegativeFile",
+            dataProviderClass = ContactNegativeDataProvider.class)
+    public void addNewContactNegativeTest_CannotOpenInvalidContact(Contact contact) {
+
+        addPage.typeContactForm(contact);
+
+        boolean isPresent = contactPage.isContactPresent(contact);
+
+        Assert.assertFalse(
+                isPresent,
+                "Invalid contact SHOULD NOT be present and SHOULD NOT be clickable"
         );
     }
 }
