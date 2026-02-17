@@ -1,7 +1,6 @@
 package ui_tests;
 
 import data_providers.ContactDataProvider;
-import data_providers.ContactNegativeDataProvider;
 import dto.Contact;
 import manager.AppManager;
 import org.testng.Assert;
@@ -25,7 +24,7 @@ public class AddNewContactTests extends AppManager {
     @BeforeMethod
     public void login() {
         homePage = new HomePage(getDriver());
-        loginPage = homePage.clickButtonHeader(HeaderMenuItem.LOGIN);
+        loginPage = clickButtonHeader(HeaderMenuItem.LOGIN);
         loginPage.typeLoginRegistrationForm
                 ("sveta548@smd.com", "Password123!");
         loginPage.clickBtnLoginForm();
@@ -73,47 +72,18 @@ public class AddNewContactTests extends AppManager {
         softAssert.assertAll();
     }
 
-    @Test(dataProvider = "dataProviderFromNegativeFile",
-            dataProviderClass = ContactNegativeDataProvider.class)
-    public void addNewContactNegativeTest(Contact contact) {
+    @Test(dataProvider = "dataProviderFromFile_WrongPhone",
+            dataProviderClass = ContactDataProvider.class)
+    public void addNewContactNegativeTest_WrongPhoneWithDP(Contact contact) {
         addPage.typeContactForm(contact);
-        int countAfter = contactPage.getCountOfContacts();
-        Assert.assertEquals(
-                countAfter,
-                countOfContacts,
-                "Contact should NOT be added with invalid data"
-        );
+        Assert.assertTrue(addPage.closeAlertReturnText()
+                .contains("Phone not valid:"));
     }
 
-    @Test(dataProvider = "dataProviderFromNegativeFile",
-            dataProviderClass = ContactNegativeDataProvider.class)
-    public void addNewContactNegativeTest_LastContactNotMatches(Contact contact) {
-
+    @Test(dataProvider = "dataProviderFromFile_Wrong_EmptyField",
+            dataProviderClass = ContactDataProvider.class)
+    public void addNewContactNegativeTest_EmptyFieldWithDP(Contact contact) {
         addPage.typeContactForm(contact);
-
-
-        String lastContactText = contactPage.getLastContactText();
-
-
-        Assert.assertFalse(
-                lastContactText.contains(contact.getName()) ||
-                        lastContactText.contains(contact.getEmail()) ||
-                        lastContactText.contains(contact.getPhone()),
-                "Invalid contact SHOULD NOT appear in the list"
-        );
-    }
-
-    @Test(dataProvider = "dataProviderFromNegativeFile",
-            dataProviderClass = ContactNegativeDataProvider.class)
-    public void addNewContactNegativeTest_CannotOpenInvalidContact(Contact contact) {
-
-        addPage.typeContactForm(contact);
-
-        boolean isPresent = contactPage.isContactPresent(contact);
-
-        Assert.assertFalse(
-                isPresent,
-                "Invalid contact SHOULD NOT be present and SHOULD NOT be clickable"
-        );
+        Assert.assertTrue(addPage.isButtonSaveDisabled());
     }
 }

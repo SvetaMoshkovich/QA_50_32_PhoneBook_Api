@@ -1,6 +1,0 @@
-name,lastName,email,phone,address,description
-,Petrov,petrov@test.com,1234567,Haifa,empty name
-Ivan,,ivan@test.com,1234567,Haifa,empty lastName
-Ivan,Ivanov,wrongEmail,1234567,Haifa,invalid email
-Ivan,Ivanov,ivan@test.com,abc123,Haifa,invalid phone
-Ivan,Ivanov,ivan@test.com,,Haifa,empty phone
